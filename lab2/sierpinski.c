@@ -7,53 +7,32 @@ struct point
   float x, y;
 };
 
-int sort_insert_at(float tab[], int i, int top, float val)
-{
-  // Insert val at index i in tab[0..top]
-  for (int j = top; j >= i; j--)
-  {
-    tab[j + 1] = tab[j];
-  }
-  tab[i] = val;
-  return 0;
-}
-
-int sort_get_index(float tab[], int top, float val)
-{
-  // Returns index of first index where val should be inserted
-  for (int i = 0; i < top; i++)
-  {
-    if (tab[i] > val)
-    {
-      // printf("Insert %.1f at %d\n", val, i);
-      return i;
-    }
-  }
-  // printf("Insert %.1f at %d\n", val, top);
-  return top;
-}
-
-int sort_insert(float tab[], int top, float val)
-{
-  // Insert val in sorted array tab[0..top]
-  int i = sort_get_index(tab, top, val);
-  sort_insert_at(tab, i, top, val);
-  return 0;
-}
+// Function prototypes
+int nb_columns();
+int nb_lines();
+int grid_init(char grid[], char pixel);
+void plot_point(char grid[], int x, int y, char pixel);
+void grid_display(char grid[]);
+int roundfl(float x);
+void plot_vline(char grid[], int x, float fy0, float fy1, char pixel);
+void plot_ploy_sweep(char grid[], struct point points[], int len, int x, char pixel);
+void plot_poly(char grid[], struct point points[], int len, char pixel);
+void plot_triangle(char grid[], struct point p1, struct point p2, struct point p3, char pixel);
+struct point line_middle(struct point p1, struct point p2);
+void sierpinski(char grid[], struct point p1, struct point p2, struct point p3, int n, char pixel);
 
 int nb_columns()
 {
-  return 65;
+  return 65; // Adjusting grid size
 }
 
 int nb_lines()
 {
-  return 33;
+  return 33; // Adjusting grid size
 }
 
 int grid_init(char grid[], char pixel)
 {
-  // Set whole grid to pixel
   int size = nb_columns() * nb_lines();
   for (int i = 0; i < size; i++)
   {
@@ -64,21 +43,19 @@ int grid_init(char grid[], char pixel)
 
 void plot_point(char grid[], int x, int y, char pixel)
 {
-  if (x > nb_columns() - 1 || x < 0 || y > nb_lines() - 1 || y < 0)
+  if (x >= nb_columns() || x < 0 || y >= nb_lines() || y < 0)
   {
-    printf("Invalid coordinates\n");
-    exit(EXIT_FAILURE);
+    return; // Prevents accessing invalid coordinates
   }
   grid[(nb_lines() - y - 1) * nb_columns() + x] = pixel;
 }
 
 void grid_display(char grid[])
 {
-  // Print grid
   int size = nb_columns() * nb_lines();
   for (int i = 0; i < size; i++)
   {
-    if (i % (nb_columns()) == 0 && i != 0)
+    if (i % nb_columns() == 0 && i != 0)
     {
       printf("\n");
     }
@@ -108,11 +85,9 @@ void plot_vline(char grid[], int x, float fy0, float fy1, char pixel)
 
 void plot_ploy_sweep(char grid[], struct point points[], int len, int x, char pixel)
 {
-
   float vlines[len * 4];
   int top = 0;
 
-  // printf("\nSweep %d:\n", x);
   for (int i = 0; i < len; i++)
   {
     int j = (i == 0) ? len - 1 : i - 1;
@@ -120,14 +95,10 @@ void plot_ploy_sweep(char grid[], struct point points[], int len, int x, char pi
         (points[j].x <= points[i].x && points[j].x <= x && x < points[i].x))
     {
       float intersection = points[i].y + (x - points[i].x) * (points[j].y - points[i].y) / (points[j].x - points[i].x);
-      sort_insert(vlines, top, intersection);
-      top++;
+      vlines[top++] = intersection;
     }
   }
-  for (int i = 0; i < len * 4; i++)
-  {
-    // printf(" %.5f ", vlines[i]);
-  }
+
   for (int i = 0; i < top - 1; i += 2)
   {
     plot_vline(grid, x, vlines[i], vlines[i + 1], pixel);
@@ -157,23 +128,31 @@ void sierpinski(char grid[], struct point p1, struct point p2, struct point p3, 
 {
   if (n == 1)
   {
-    plot_triangle(grid, (struct point){0, 0}, (struct point){32, 32}, (struct point){64, 0}, '-');
+    plot_triangle(grid, p1, p2, p3, pixel);
   }
-  struct point m12 = line_middle(p1, p2);
-  struct point m23 = line_middle(p2, p3);
-  struct point m31 = line_middle(p3, p1);
+  else
+  {
+    struct point m12 = line_middle(p1, p2);
+    struct point m23 = line_middle(p2, p3);
+    struct point m31 = line_middle(p3, p1);
 
-  sierpinski(grid, p1, m12, m31, n - 1, pixel);
-  sierpinski(grid, m12, p2, m23, n - 1, pixel);
-  sierpinski(grid, m31, m23, p3, n - 1, pixel);
+    sierpinski(grid, p1, m12, m31, n - 1, pixel);
+    sierpinski(grid, m12, p2, m23, n - 1, pixel);
+    sierpinski(grid, m31, m23, p3, n - 1, pixel);
+  }
 }
+
 int main(int argc, char *argv[])
 {
-  int n = nb_columns();
-  int m = nb_lines();
-  char tab[n * m];
-  grid_init(tab, ' ');
-  sierpinski(tab, (struct point){0, 0}, (struct point){32, 32}, (struct point){64, 0}, 6, '-');
-  grid_display(tab);
+  char grid[nb_columns() * nb_lines()];
+  grid_init(grid, ' ');
+
+  struct point p1 = {0, 0};
+  struct point p2 = {32, 32};
+  struct point p3 = {64, 0};
+
+  sierpinski(grid, p1, p2, p3, 6, '-');
+
+  grid_display(grid);
   return 0;
 }
